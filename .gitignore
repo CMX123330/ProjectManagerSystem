@@ -1,0 +1,21 @@
+# ========== 构建产物 ==========
+# Maven 编译输出 + cargo 下载的整个 Tomcat，全在这里，巨大且可再生
+target/
+
+# ========== IDE 配置文件 ==========
+# 每个人的 IDE 配置不同，不该进仓库
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# ========== 敏感配置（重要！） ==========
+# config.properties 里有数据库密码，绝不能提交到仓库
+src/main/resources/config.properties
+
+# ========== 系统垃圾文件 ==========
+.DS_Store
+Thumbs.db
+*.log
