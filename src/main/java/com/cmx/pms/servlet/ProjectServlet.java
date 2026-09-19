@@ -22,32 +22,24 @@ public class ProjectServlet extends HttpServlet{
         try {
             String preid = req.getParameter("id");//获取项目id
             String preaction = req.getParameter("action");//获取项目行为
-            if (preid==null) {
-            ProjectDao projectDaoGet = new ProjectDao();
-            List<Project> projects = projectDaoGet.findAll();
-            req.setAttribute("projects", projects);
-            req.getRequestDispatcher("/WEB-INF/jsp/project-list.jsp").forward(req, resp);
+            if (preid == null) {
+                ProjectDao projectDaoGet = new ProjectDao();
+                List<Project> projects = projectDaoGet.findAll();
+                req.setAttribute("projects", projects);
+                req.getRequestDispatcher("/WEB-INF/jsp/project-list.jsp").forward(req, resp);
             } else {
-                if ("delete".equals(preaction)) {
-                    ProjectDao pDao = new ProjectDao();
-                    pDao.delete(Integer.parseInt(preid));//功能实现步骤
-                    resp.sendRedirect(req.getContextPath()+"/projects");
-                    return;
-                } else if("edit".equals(preaction)){
+                if ("edit".equals(preaction)) {
                     Project p = new ProjectDao().findById(Integer.parseInt(preid));
                     req.setAttribute("project", p);
                     req.getRequestDispatcher("/WEB-INF/jsp/project-edit.jsp").forward(req, resp);
                     return;
-                }
-                else if("upload".equals(preaction))
-                {
+                } else if ("upload".equals(preaction)) {
                     Project p = new ProjectDao().findById(Integer.parseInt(preid));
                     req.setAttribute("project", p);
                     req.getRequestDispatcher("/WEB-INF/jsp/upload.jsp").forward(req, resp);
                     return;
 
-                }
-                else{
+                } else {
                     TaskDao tDao = new TaskDao();
                     ProjectDao pDao = new ProjectDao();
                     List<Task> tasks = tDao.findByProjectId(Integer.parseInt(preid));
@@ -60,7 +52,7 @@ public class ProjectServlet extends HttpServlet{
                 }
             }
         } catch (Exception e) {
-            throw new ServletException("查询项目失败",e);   
+            throw new ServletException("查询项目失败", e);
         }
     }
 
@@ -68,30 +60,58 @@ public class ProjectServlet extends HttpServlet{
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         try {
             req.setCharacterEncoding("UTF-8");
+            String preaction = req.getParameter("action");
             String preid = req.getParameter("id");
             String name = req.getParameter("name");
             String description = req.getParameter("description");
-            if(preid==null||preid.isEmpty()){
+            if ("delete".equals(preaction)) {
+                new AttachmentDao().deleteByprojectId(Integer.parseInt(preid));
+                new TaskDao().deleteByprojectId(Integer.parseInt(preid));
                 ProjectDao pDao = new ProjectDao();
-                Project p = new Project(name,description);
-                pDao.add(p);
-                resp.sendRedirect(req.getContextPath()+"/projects");
+                pDao.delete(Integer.parseInt(preid));//功能实现步骤
+                resp.sendRedirect(req.getContextPath() + "/projects");
                 return;
-            }
-            else{
+            } else if ("reorder".equals(preaction)) {
+                // 拖动排序：ids 是排好序的 id 列表（逗号分隔），按下标写回 sort_order
+                String ids = req.getParameter("ids");
+                if (ids != null && !ids.isEmpty()) {
+                    ProjectDao pDao = new ProjectDao();
+                    String[] arr = ids.split(",");
+                    for (int i = 0; i < arr.length; i++) {
+                        pDao.updateSortOrder(Integer.parseInt(arr[i]), i);
+                    }
+                }
+                resp.sendRedirect(req.getContextPath() + "/projects");
+                return;
+            } else if ("addAjax".equals(preaction)) {
+                // 无刷新新建项目：返回新项目卡片片段
+                ProjectDao pDao = new ProjectDao();
+                Project p = new Project(name, description);
+                pDao.add(p);
+                // 新项目 sort_order 最大 → 列表最后一条就是刚创建的
+                List<Project> projects = pDao.findAll();
+                req.setAttribute("project", projects.get(projects.size() - 1));
+                req.getRequestDispatcher("/WEB-INF/jsp/project-card.jsp").forward(req, resp);
+                return;
+            } else if (preid == null || preid.isEmpty()) {
+                ProjectDao pDao = new ProjectDao();
+                Project p = new Project(name, description);
+                pDao.add(p);
+                resp.sendRedirect(req.getContextPath() + "/projects");
+                return;
+            } else {
                 ProjectDao pDao = new ProjectDao();
                 Project p = pDao.findById(Integer.parseInt(preid));
                 p.setName(name);
                 p.setDescription(description);
                 pDao.update(p);
-                resp.sendRedirect(req.getContextPath()+"/projects?id="+p.getId());
+                resp.sendRedirect(req.getContextPath() + "/projects?id=" + p.getId());
                 return;
             }
         } catch (Exception e) {
-            throw new ServletException("写入项目失败",e);
+            throw new ServletException("写入项目失败", e);
         }
 
-        
     }
     
 }

@@ -6,6 +6,8 @@ public class Project{
     private String description;     //项目描述
     private String status;          //项目状态
     private LocalDateTime createdAt; //创建日期
+    private int taskCount;
+    private int sortOrder;
 
     public Project()
     {
@@ -67,5 +69,21 @@ public class Project{
                 ", status='" + status + '\'' +
                 ", createdAt=" + createdAt +
                 '}';
+    }
+
+    public int getTaskCount() {
+        return taskCount;
+    }
+
+    public void setTaskCount(int taskCount) {
+        this.taskCount = taskCount;
+    }
+
+    public int getSortOrder() {
+        return sortOrder;
+    }
+
+    public void setSortOrder(int sortOrder) {
+        this.sortOrder = sortOrder;
     }
 }

@@ -18,10 +18,11 @@
 </header>
 <div class="container">
     <h1 class="page-title">${project.name}</h1>
+    <p style="margin-bottom: 16px;"><a class="link-muted" href="${pageContext.request.contextPath}/projects">← 返回列表</a></p>
 
     <div class="card">
         <h2>新建任务</h2>
-        <form action="${pageContext.request.contextPath}/tasks" method="post">
+        <form id="addTaskForm" action="${pageContext.request.contextPath}/tasks" method="post">
             <input type="hidden" name="projectId" value="${project.id}">
             <div class="form-row">
                 <label>任务标题</label>
@@ -37,27 +38,98 @@
 
     <div class="card">
         <h2>任务列表</h2>
-        <table>
-            <tr>
-                <th>标题</th>
-                <th>状态</th>
-                <th>截止日期</th>
-                <th>创建时间</th>
-                <th>操作</th>
-            </tr>
+        <div id="taskList">
             <c:forEach items="${tasks}" var="t">
-            <tr>
-                <td>${t.title}</td>
-                <td><span class="tag ${t.status == '完成' ? 'tag-done' : 'tag-doing'}">${t.status}</span></td>
-                <td>${empty t.dueDate ? '-' : fn:substring(t.dueDate, 0, 10)}</td>
-                <td>${fn:substring(t.createdAt, 0, 16)}</td>
-                <td>
-                    <a href="${pageContext.request.contextPath}/tasks?action=done&id=${t.id}&projectId=${project.id}">完成</a>
-                    <a class="link-danger" href="${pageContext.request.contextPath}/tasks?action=delete&id=${t.id}&projectId=${project.id}" onclick="return confirm('确认要删除吗？')">删除</a>
-                </td>
-            </tr>
+                <div class="drag-card" draggable="true" data-id="${t.id}">
+                    <span class="drag-handle">⠿</span>
+                    <div class="drag-card-main">
+                        <span class="drag-card-title">${t.title}</span>
+                        <span class="tag ${t.status == '完成' ? 'tag-done' : 'tag-doing'}">${t.status}</span>
+                        <span class="drag-card-meta">截止 ${empty t.dueDate ? '-' : fn:substring(t.dueDate, 0, 10)} · 创建于 ${fn:substring(t.createdAt, 0, 16)}</span>
+                    </div>
+                    <div class="drag-card-actions">
+                        <a class="done-link" href="${pageContext.request.contextPath}/tasks?action=done&id=${t.id}&projectId=${project.id}">完成</a>
+                        <a class="link-danger" href="${pageContext.request.contextPath}/tasks?action=delete&id=${t.id}&projectId=${project.id}" onclick="return confirm('确认要删除吗？')">删除</a>
+                    </div>
+                </div>
             </c:forEach>
-        </table>
+        </div>
+        <script>
+            var ctx = '${pageContext.request.contextPath}';
+            document.getElementById("addTaskForm").addEventListener('submit',function(e){
+                e.preventDefault();
+                var form=e.target;
+                var data =new FormData(form);
+                data.append('action', 'addAjax');  
+                fetch(ctx+'/tasks',{method:'post' , body:data}).then(function(resp){return resp.text();}).then(function(html){
+                    document.getElementById('taskList')
+                .insertAdjacentHTML('beforeend',html);
+            form.reset();
+        });
+            });
+            (function () {
+                var list = document.getElementById('taskList');
+                var dragEl = null;
+                list.addEventListener('dragstart', function (e) {
+                    if (!e.target.classList.contains('drag-card')) return;
+                    dragEl = e.target;
+                    dragEl.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+                list.addEventListener('dragend', function () {
+                    if (dragEl) dragEl.classList.remove('dragging');
+                    dragEl = null;
+                });
+                list.addEventListener('dragover', function (e) {
+                    e.preventDefault();
+                    var after = getAfterElement(list, e.clientY);
+                    if (after == null) list.appendChild(dragEl);
+                    else list.insertBefore(dragEl, after);
+                });
+                list.addEventListener('drop', function (e) {
+                    e.preventDefault();
+                    var ids = Array.prototype.map.call(list.querySelectorAll('.drag-card'), function (c) { return c.dataset.id; }).join(',');
+                    fetch(ctx + '/tasks', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: 'action=reorder&projectId=${project.id}&ids=' + encodeURIComponent(ids)
+                    });
+                });
+                function getAfterElement(container, y) {
+                    var els = Array.prototype.filter.call(container.querySelectorAll('.drag-card'), function (c) { return c !== dragEl; });
+                    var closest = { offset: -Infinity, element: null };
+                    els.forEach(function (child) {
+                        var box = child.getBoundingClientRect();
+                        var offset = y - box.top - box.height / 2;
+                        if (offset < 0 && offset > closest.offset) closest = { offset: offset, element: child };
+                    });
+                    return closest.element;
+                }
+            })();
+            // 无刷新"完成"：事件委托，新插入的卡片同样生效
+            (function () {
+                var list = document.getElementById('taskList');
+                list.addEventListener('click', function (e) {
+                    var link = e.target.closest('.done-link');
+                    if (!link) return;
+                    e.preventDefault();
+                    var card = link.closest('.drag-card');
+                    var id = card.dataset.id;
+                    fetch(ctx + '/tasks', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: 'action=doneAjax&id=' + id + '&projectId=${project.id}'
+                    }).then(function (r) { return r.text(); }).then(function (txt) {
+                        if (txt === 'ok') {
+                            var tag = card.querySelector('.tag');
+                            tag.textContent = '完成';
+                            tag.className = 'tag tag-done';
+                            link.remove();
+                        }
+                    });
+                });
+            })();
+        </script>
     </div>
 
     <div class="card">

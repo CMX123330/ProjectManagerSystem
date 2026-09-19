@@ -1,6 +1,5 @@
 package com.cmx.pms.model;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 public class Task{
     private int id;
@@ -9,6 +8,7 @@ public class Task{
     private String status;
     private LocalDateTime dueDate;
     private LocalDateTime createdAt;
+    private int sortOrder;
     public Task()
     {
     }
@@ -65,6 +65,14 @@ public class Task{
     public LocalDateTime getCreatedAt()
     {
         return createdAt;
+    }
+    public int getSortOrder()
+    {
+        return sortOrder;
+    }
+    public void setSortOrder(int sortOrder)
+    {
+        this.sortOrder = sortOrder;
     }
     @Override
     public String toString()

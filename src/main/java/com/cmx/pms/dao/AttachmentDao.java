@@ -27,4 +27,9 @@ public class AttachmentDao {
         String sql = "SELECT id,project_id AS projectId,filename,"+"original_name AS originalName,upload_time AS uploadTime "+"FROM attachment WHERE id=?";
         return runner.query(sql, new BeanHandler<>(Attachment.class),id);
     }
+    public int deleteByprojectId(int projectId) throws SQLException
+    {
+        String sql = "delete from attachment where project_id=?";
+        return runner.update(sql,projectId);
+    }
 }

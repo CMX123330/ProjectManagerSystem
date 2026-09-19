@@ -18,7 +18,7 @@ try {
     
 } catch (Exception e) {
     throw new RuntimeException("读取 config.properties 失败",e);
-}        dataSource.setUrl(props.getProperty("jdbc.url"));
+}       dataSource.setUrl(props.getProperty("jdbc.url"));
         dataSource.setUsername(props.getProperty("jdbc.username"));
         dataSource.setPassword(props.getProperty("jdbc.password"));
     }
